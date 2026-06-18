@@ -1,0 +1,8 @@
+{
+  "name": "resume-optimizer",
+  "version": "1.0.0",
+  "description": "AI简历优化工具 - 一键简历匹配JD优化",
+  "scripts": {
+    "vercel-build": "echo 'Static build complete'"
+  }
+}
