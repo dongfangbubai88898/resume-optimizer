@@ -265,7 +265,7 @@
           html += '</div>';
         }
 
-        result.innerHTML = html;
+        result.innerHTML = html + getShareButtons();
         result.classList.add('active');
       } catch (err) {
         showError('result-full', err.message);
@@ -302,7 +302,7 @@
         if (data.suggestions?.length) {
           html += `<div class="result-section"><h4>💡 改进建议</h4><ul>${data.suggestions.map(s => `<li>${s}</li>`).join('')}</ul></div>`;
         }
-        result.innerHTML = html;
+        result.innerHTML = html + getShareButtons();
         result.classList.add('active');
       } catch (err) {
         showError('result-diag', err.message);
@@ -340,7 +340,7 @@
         if (data.suggestions?.length) {
           html += `<div class="result-section"><h4>💡 优化建议</h4><ul>${data.suggestions.map(s => `<li>${s}</li>`).join('')}</ul></div>`;
         }
-        result.innerHTML = html;
+        result.innerHTML = html + getShareButtons();
         result.classList.add('active');
       } catch (err) {
         showError('result-match', err.message);
@@ -376,15 +376,75 @@
         if (data.improvements?.length) {
           html += `<div class="result-section"><h4>💡 优化亮点</h4><ul>${data.improvements.map(i => `<li>${i}</li>`).join('')}</ul></div>`;
         }
-        result.innerHTML = html;
+        result.innerHTML = html + getShareButtons();
         result.classList.add('active');
       } catch (err) {
         showError('result-opt', err.message);
       } finally {
         btn.disabled = false;
         loading.classList.remove('active');
-      }
     }
+
+    // 分享功能
+    function getShareButtons() {
+      const url = window.location.href;
+      return `
+        <div class="share-section" style="margin-top:24px;padding-top:16px;border-top:1px solid #e0e0e0;text-align:center;">
+          <p style="font-size:13px;color:#999;margin-bottom:10px;">觉得有用？分享给朋友 👇</p>
+          <button class="btn btn-success" onclick="copyShareLink()" style="margin-right:8px;">📋 复制链接+文案</button>
+          <button class="btn btn-secondary" onclick="shareToWechat()" style="margin-right:8px;">💬 分享到微信</button>
+          <button class="btn btn-secondary" onclick="downloadResult()">📸 截图保存</button>
+          <div id="shareToast" style="display:none;margin-top:8px;padding:8px;background:#e6f4ea;border-radius:6px;font-size:13px;color:#0f9d58;"></div>
+        </div>
+      `;
+    }
+
+    function copyShareLink() {
+      const url = window.location.href;
+      const text = '我刚用AI简历优化工具免费分析了简历，3分钟出报告，推荐试试！\n' + url;
+      navigator.clipboard.writeText(text).then(() => {
+        const toast = document.getElementById('shareToast');
+        if (toast) {
+          toast.textContent = '✅ 已复制，去微信/朋友圈粘贴分享吧！';
+          toast.style.display = 'block';
+          setTimeout(() => toast.style.display = 'none', 4000);
+        }
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        const toast = document.getElementById('shareToast');
+        if (toast) {
+          toast.textContent = '✅ 已复制！';
+          toast.style.display = 'block';
+          setTimeout(() => toast.style.display = 'none', 4000);
+        }
+      });
+    }
+
+    function shareToWechat() {
+      const url = window.location.href;
+      const text = '我刚用AI简历优化工具免费分析了简历，3分钟出报告，推荐试试！\n' + url;
+      navigator.clipboard.writeText(text).then(() => {
+        const toast = document.getElementById('shareToast');
+        if (toast) {
+          toast.textContent = '✅ 文案已复制！去微信 → 任意聊天窗口 → 粘贴发送，朋友就能看到了';
+          toast.style.display = 'block';
+          setTimeout(() => toast.style.display = 'none', 6000);
+        }
+      });
+    }
+
+    function downloadResult() {
+      window.print();
+    }
+
+    const ps = document.createElement('style');
+    ps.textContent = `@media print { .share-section,.tabs,.btn,.loading,.tips{display:none!important} body{background:#fff} .main-content{box-shadow:none;padding:0} }`;
+    document.head.appendChild(ps);
   </script>
 </body>
 </html>
