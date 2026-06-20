@@ -15,10 +15,24 @@
     header p { opacity: .85; font-size: 15px; }
 
     /* Tabs */
-    .tabs { display: flex; gap: 4px; margin: 20px 0 0; background: #fff; border-radius: 10px 10px 0 0; overflow: hidden; }
-    .tab { flex: 1; padding: 14px; text-align: center; cursor: pointer; font-weight: 500; color: #666; transition: all .2s; border-bottom: 3px solid transparent; }
+    .tabs { display: flex; gap: 4px; margin: 20px 0 0; background: #fff; border-radius: 10px 10px 0 0; overflow-x: auto; }
+    .tab { flex: 0 0 auto; padding: 14px 16px; text-align: center; cursor: pointer; font-weight: 500; color: #666; transition: all .2s; border-bottom: 3px solid transparent; white-space: nowrap; }
     .tab:hover { background: #f5f7fa; }
     .tab.active { color: #1a73e8; border-bottom-color: #1a73e8; background: #f0f7ff; }
+
+    /* Difficulty tags */
+    .tag-easy { background: #e6f4ea; color: #0f9d58; }
+    .tag-medium { background: #fef7e0; color: #e37400; }
+    .tag-hard { background: #fce8e6; color: #c5221f; }
+    .tag-type { background: #e8f0fe; color: #1a73e8; }
+
+    /* Interview Q */
+    .iq-card { margin-bottom:12px; padding:12px; background:#f8f9fa; border-radius:8px; border-left:3px solid #1a73e8; }
+    .iq-card h4 { font-size:14px; margin-bottom:6px; color:#333; }
+    .iq-card p { font-size:13px; line-height:1.6; color:#555; }
+
+    /* SEO meta */
+    .seo-stats { display:none; }
 
     /* Main content */
     .main-content { background: #fff; border-radius: 0 0 10px 10px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
@@ -92,6 +106,7 @@
       <div class="tab" data-tab="diagnose">🔍 简历诊断</div>
       <div class="tab" data-tab="match">🎯 JD匹配</div>
       <div class="tab" data-tab="optimize">✏️ 润色优化</div>
+      <div class="tab" data-tab="interview">🎤 面试题</div>
     </div>
 
     <div class="main-content">
@@ -172,6 +187,36 @@
           <div class="loading" id="loading-opt"><div class="spinner"></div> AI正在优化简历...</div>
         </div>
         <div class="result" id="result-opt"></div>
+      </div>
+
+      <!-- 面试题预测 -->
+      <div class="tab-content" id="tab-interview">
+        <div class="form-group">
+          <label>简历内容</label>
+          <textarea id="iq-resume" placeholder="粘贴简历内容..."></textarea>
+        </div>
+        <div class="row">
+          <div class="form-group">
+            <label>目标JD <span style="color:#999;font-weight:400;">（可选）</span></label>
+            <textarea id="iq-jd" placeholder="粘贴JD（可选，加JD可生成更有针对性的题目）"></textarea>
+          </div>
+          <div class="form-group">
+            <label>题目数量</label>
+            <select id="iq-count">
+              <option value="3">3题</option>
+              <option value="5" selected>5题</option>
+              <option value="8">8题</option>
+            </select>
+          </div>
+        </div>
+        <div class="tips">
+          <strong>💡 使用技巧：</strong> 粘贴简历（加JD效果更佳），AI会预测面试官可能问你的题目，并给出回答要点。
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" onclick="interviewQ()">🎤 预测面试题</button>
+          <div class="loading" id="loading-iq"><div class="spinner"></div> AI正在分析岗位要求并生成题目...</div>
+        </div>
+        <div class="result" id="result-iq"></div>
       </div>
     </div>
   </div>
@@ -383,6 +428,46 @@
       } finally {
         btn.disabled = false;
         loading.classList.remove('active');
+      }
+    }
+
+    // 面试题预测
+    async function interviewQ() {
+      const resume = document.getElementById('iq-resume').value.trim();
+      const jd = document.getElementById('iq-jd').value.trim();
+      const count = parseInt(document.getElementById('iq-count').value) || 5;
+      if (!resume) { alert('请先粘贴简历内容'); return; }
+
+      const btn = document.querySelector('#tab-interview .btn');
+      const loading = document.getElementById('loading-iq');
+      const result = document.getElementById('result-iq');
+      btn.disabled = true;
+      loading.classList.add('active');
+      result.classList.remove('active');
+
+      try {
+        const data = await apiCall('/api/interview-questions', { resume, jd: jd || undefined, count });
+        let html = '<h3>🎯 预测面试题</h3>';
+        if (data.summary) html += '<div class="result-section"><p>' + data.summary + '</p></div>';
+        if (data.questions?.length) {
+          data.questions.forEach((q, i) => {
+            html += '<div class="iq-card">';
+            html += '<h4>Q' + (i+1) + '. ' + q.question + '</h4>';
+            html += '<p style="margin-bottom:6px;"><span class="tag ' + (q.difficulty==='困难'?'tag-hard':q.difficulty==='中等'?'tag-medium':'tag-easy') + '">' + (q.difficulty||'') + '</span>';
+            if (q.type) html += ' <span class="tag tag-type">' + q.type + '</span></p>';
+            html += '<p><strong>期待答案：</strong>' + (q.expectedAnswer||'') + '</p>';
+            if (q.tips) html += '<p style="color:#666;font-size:13px;margin-top:4px;">💡 ' + q.tips + '</p>';
+            html += '</div>';
+          });
+        }
+        result.innerHTML = html + getShareButtons();
+        result.classList.add('active');
+      } catch (err) {
+        showError('result-iq', err.message);
+      } finally {
+        btn.disabled = false;
+        loading.classList.remove('active');
+      }
     }
 
     // 分享功能
