@@ -21,7 +21,7 @@ ${resume}
     { "question": "题目", "difficulty": "简单|中等|困难", "type": "技术|行为|项目|综合", "expectedAnswer": "期待的回答要点", "tips": "回答技巧" }
   ]
 }`;
-    const content = await deepseekCall(prompt, { maxTokens: 4096 });
+    const content = await deepseekCall(prompt, { maxTokens: 8000, jsonMode: true });
     const parsed = parseJson(content) || { summary: '解析失败', questions: [] };
     res.json(parsed);
   } catch (err) { handleError(res, err); }
