@@ -25,8 +25,8 @@ ${resume}
   "topFixes": ["最需要改的问题"],
   "actionItems": ["具体操作步骤"]
 }`;
-    const content = await deepseekCall(prompt, { maxTokens: 4096 });
-    const parsed = parseJson(content) || { atsScore: 0, error: '解析失败' };
+    const content = await deepseekCall(prompt, { maxTokens: 8000, jsonMode: true });
+    const parsed = parseJson(content) || { atsScore: 0, error: '解析失败', raw: (content || '').slice(0, 500) };
     res.json(parsed);
   } catch (err) { handleError(res, err); }
 }

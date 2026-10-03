@@ -30,6 +30,7 @@ export async function deepseekCall(prompt, options = {}) {
     temperature: options.temperature ?? 0.3,
     max_tokens: options.maxTokens ?? 4096
   };
+  if (options.jsonMode) body.response_format = { type: 'json_object' };
   try {
     const res = await fetch(BASE_URL, {
       method: 'POST',
@@ -47,9 +48,44 @@ export async function deepseekCall(prompt, options = {}) {
 }
 
 export function parseJson(content) {
-  try {
-    return JSON.parse(content.replace(/```json\n?|```\n?/g, '').trim());
-  } catch { return null; }
+  if (!content) return null;
+  let s = String(content).replace(/```json\n?|```\n?/g, '').trim();
+  // direct parse
+  try { return JSON.parse(s); } catch {}
+  // extract first balanced {...} block
+  const start = s.indexOf('{');
+  if (start >= 0) {
+    let depth = 0, inStr = false, esc = false, end = -1;
+    for (let i = start; i < s.length; i++) {
+      const c = s[i];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (c === '\\') esc = true;
+        else if (c === '"') inStr = false;
+      } else {
+        if (c === '"') inStr = true;
+        else if (c === '{') depth++;
+        else if (c === '}') { depth--; if (depth === 0) { end = i; break; } }
+      }
+    }
+    if (end > start) {
+      try { return JSON.parse(s.slice(start, end + 1)); } catch {}
+    }
+    // truncation repair: close open strings/brackets
+    let frag = s.slice(start);
+    if (inStr) frag += '"';
+    let d = 0, arr = 0, inS = false, es = false;
+    for (let i = 0; i < frag.length; i++) {
+      const c = frag[i];
+      if (inS) { if (es) es = false; else if (c === '\\') es = true; else if (c === '"') inS = false; }
+      else { if (c === '"') inS = true; else if (c === '{') d++; else if (c === '}') d--; else if (c === '[') arr++; else if (c === ']') arr--; }
+    }
+    frag = frag.replace(/,\s*$/, '');
+    while (arr-- > 0) frag += ']';
+    while (d-- > 0) frag += '}';
+    try { return JSON.parse(frag); } catch {}
+  }
+  return null;
 }
 
 export function handleError(res, err) {

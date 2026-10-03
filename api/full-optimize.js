@@ -7,23 +7,31 @@ export default async function handler(req, res) {
   try {
     const { resume, jd } = req.body;
     if (!resume) return res.status(400).json({ error: '请输入简历内容' });
-    const prompt = `你是一位全能简历顾问。请执行以下三个步骤，以JSON格式回复。
+    const diagPrompt = `你是一位资深简历顾问。请对以下简历做诊断，以JSON回复：
+{ "score": 0-100, "summary": "", "strengths": [], "weaknesses": [], "suggestions": [] }
 
-步骤1 - 简历诊断：评估简历质量，给出评分和改进建议。
-${jd ? '步骤2 - JD匹配分析：分析简历与职位描述的匹配度。\n职位描述：\n' + jd : '步骤2 - 通用优化建议'}
-步骤3 - 简历优化：用STAR法则重写每条经历，突出量化成果。
-
-回复JSON格式：
-{
-  "diagnosis": { "score": 0, "summary": "", "strengths": [], "weaknesses": [], "suggestions": [] },
-  "match": { "matchScore": 0, "summary": "", "matchedSkills": [], "missingSkills": [] },
-  "optimized": { "resume": "", "changes": [], "improvements": [] }
-}
-
-简历内容：
+简历：
 ${resume}`;
-    const content = await deepseekCall(prompt, { maxTokens: 8192 });
-    const parsed = parseJson(content) || { error: '解析失败', raw: content };
+    const matchPrompt = `你是一位招聘专家。请分析以下简历与职位的匹配度，以JSON回复：
+{ "matchScore": 0-100, "summary": "", "matchedSkills": [], "missingSkills": [] }
+
+${jd ? '职位描述：\n' + jd + '\n\n' : ''}简历：
+${resume}`;
+    const optPrompt = `你是一位顶尖简历优化专家。请用STAR法则重写以下简历的每条经历，突出量化成果，保持真实不编造。以JSON回复：
+{ "resume": "优化后的完整简历", "changes": [], "improvements": [] }
+
+简历：
+${resume}`;
+    const [diagRaw, matchRaw, optRaw] = await Promise.all([
+      deepseekCall(diagPrompt, { maxTokens: 3000, jsonMode: true }),
+      deepseekCall(matchPrompt, { maxTokens: 3000, jsonMode: true }),
+      deepseekCall(optPrompt, { maxTokens: 4000, jsonMode: true })
+    ]);
+    const parsed = {
+      diagnosis: parseJson(diagRaw) || { error: '解析失败' },
+      match: parseJson(matchRaw) || { error: '解析失败' },
+      optimized: parseJson(optRaw) || { error: '解析失败' }
+    };
     res.json(parsed);
   } catch (err) { handleError(res, err); }
 }
