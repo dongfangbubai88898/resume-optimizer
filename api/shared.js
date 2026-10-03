@@ -21,7 +21,7 @@ export function checkPost(req, res) {
 export async function deepseekCall(prompt, options = {}) {
   const API_KEY = process.env.DEEPSEEK_KEY;
   if (!API_KEY) throw new Error('DEEPSEEK_KEY 未设置');
-  const timeout = options.timeout ?? 30000;
+  const timeout = options.timeout ?? 55000;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
   const body = {
