@@ -23,9 +23,9 @@ ${resume}`;
 简历：
 ${resume}`;
     const [diagRaw, matchRaw, optRaw] = await Promise.all([
-      deepseekCall(diagPrompt, { maxTokens: 3000, jsonMode: true }),
-      deepseekCall(matchPrompt, { maxTokens: 3000, jsonMode: true }),
-      deepseekCall(optPrompt, { maxTokens: 4000, jsonMode: true })
+      deepseekCall(diagPrompt, { maxTokens: 6000, jsonMode: true }),
+      deepseekCall(matchPrompt, { maxTokens: 6000, jsonMode: true }),
+      deepseekCall(optPrompt, { maxTokens: 8000, jsonMode: true })
     ]);
     const parsed = {
       diagnosis: parseJson(diagRaw) || { error: '解析失败' },
